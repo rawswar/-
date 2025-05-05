@@ -10,7 +10,7 @@
       "requiredVersion": "0.0.1",          // 必须与 JS 文件中 WidgetMetadata.requiredVersion 一致
       "version": "1.0.0",                 // 必须与 JS 文件中 WidgetMetadata.version 一致
       "author": "Your Name/Nickname",       // 必须与 JS 文件中 WidgetMetadata.author 一致 (记得替换成你的名字)
-      "url": "https://github.com/rawswar/-/blob/main/1.js" // **极其重要**: 这是你的 bangumi_trends.js 文件的实际下载链接
+      "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js" // **极其重要**: 这是你的 bangumi_trends.js 文件的实际下载链接
     }
   ]
 }
