@@ -1,16 +1,15 @@
 {
-  "title": "我的自定义 Widgets",  // 你可以给你的 Widget 合集起个名字
-  "description": "包含我创建的各种 ForwardWidget 组件", // 描述你的合集
-  "icon": "https://github.com/pack1r/ForwardWidgets/raw/main/icon.png", // 可选：你的合集图标 URL (你需要提供一个有效的图片链接)
+  "title": "我的自定义 Widgets",  
+  "description": "包含我创建的各种 ForwardWidget 组件", 
+  "icon": "https://github.com/pack1r/ForwardWidgets/raw/main/icon.png", 
   "widgets": [
     {
-      "id": "bangumi_anime_browser_trends", // 必须与你的 JS 文件中 WidgetMetadata.id 一致
-      "title": "Bangumi 动画热度榜",        // 通常与 JS 文件中 WidgetMetadata.title 一致
-      "description": "浏览 Bangumi 按热度排序的动画列表", // 通常与 JS 文件中 WidgetMetadata.description 一致
-      "requiredVersion": "0.0.1",          // 必须与 JS 文件中 WidgetMetadata.requiredVersion 一致
-      "version": "1.0.0",                 // 必须与 JS 文件中 WidgetMetadata.version 一致
-      "author": "Your Name/Nickname",       // 必须与 JS 文件中 WidgetMetadata.author 一致 (记得替换成你的名字)
-      "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js" // **极其重要**: 这是你的 bangumi_trends.js 文件的实际下载链接
-    }
+      "id": "bangumi_anime_browser_trends", 
+      "title": "Bangumi 动画热度榜",        
+      "description": "浏览 Bangumi 按热度排序的动画列表",
+      "requiredVersion": "0.0.1",          
+      "version": "1.0.3",                 
+      "author": "t1st",       
+      "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js"
   ]
 }
