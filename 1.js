@@ -1,315 +1,150 @@
-// ==ForwardWidget==
+/**
+ * ForwardWidget Script for Bangumi Anime Browser (Sorted by Trends)
+ *
+ * Fetches and parses the anime list from Bangumi's anime browser page,
+ * sorted by popularity trends. Supports pagination.
+ */
+
 var WidgetMetadata = {
-    id: "trends-imdb-bangumi-v1", // Unique identifier - MUST MATCH the ID in the index file
-    title: "IMDb & Bangumi Trends", // Display title (often overridden by index file)
-    description: "Fetches trending Movies/TV Shows from IMDb charts and trending Anime from Bangumi.", // Widget description (often overridden by index file)
-    author: "CCE v2.7", // Author name
-    site: "https://github.com/CognitiveCatalystEngine", // Author/support website (Optional)
-    version: "1.0.0", // Widget version
-    requiredVersion: "0.0.1", // Minimum ForwardWidget version required
+    id: "bangumi_anime_browser_trends", // Unique ID for this widget
+    title: "Bangumi 动画热度榜",        // Widget title displayed in the app
+    description: "浏览 Bangumi 按热度排序的动画列表", // Widget description
+    author: "Your Name/Nickname",       // Your name or nickname
+    site: "https://bgm.tv/anime/browser?sort=trends", // Source website
+    version: "1.0.0",                 // Widget version
+    requiredVersion: "0.0.1",          // Minimum ForwardWidget version required
     modules: [
         {
-            title: "IMDb Trending", // Module title
-            description: "Fetches MovieMeter or TVMeter trending lists from IMDb.", // Module description
-            requiresWebView: false, // Does not require WebView
-            functionName: "getImdbTrending", // Processing function name
-            sectionMode: false, // Does not support section mode
+            title: "动画热度榜",             // Module title
+            description: "显示 Bangumi 按热度排序的动画", // Module description
+            requiresWebView: false,        // Standard HTTP request is sufficient
+            functionName: "getBangumiAnimeTrends", // Name of the processing function
+            sectionMode: false,            // Not using section mode
             params: [
                 {
-                    name: "contentType",
-                    title: "Content Type",
-                    type: "enumeration", // Enumeration type
-                    description: "Select the type of content to fetch",
-                    value: "movies", // Default value
-                    enumOptions: [ // Options for enumeration
-                        { title: "Movies", value: "movies" },
-                        { title: "TV Shows", value: "tv" },
-                        { title: "Mixed (Movies & TV)", value: "mixed" }
-                    ]
-                },
-                {
-                    name: "maxResults",
-                    title: "Max Results",
-                    type: "count", // Count type
-                    description: "Maximum number of results to return (0 for all)",
-                    value: "25" // Default value
-                }
-            ]
-        },
-        {
-            title: "Bangumi Anime Trends", // Module title
-            description: "Fetches the current trending anime list from Bangumi.", // Module description
-            requiresWebView: false, // Does not require WebView
-            functionName: "getBangumiTrends", // Processing function name
-            sectionMode: false, // Does not support section mode
-            params: [
-                 {
-                    name: "maxResults",
-                    title: "Max Results",
-                    type: "count", // Count type
-                    description: "Maximum number of results to return (0 for all)",
-                    value: "25" // Default value
+                    name: "page",          // Parameter name for pagination
+                    title: "页码",         // Parameter title
+                    type: "page",          // Use the built-in 'page' type selector
+                    description: "选择要加载的列表页码", // Parameter description
+                    value: "1"             // Default value is page 1
                 }
             ]
         }
-    ]
-    // Optional: Add a search module if needed later
-    // search: { ... }
+    ],
+    // Optional: Add search functionality later if needed
+    // search: {
+    //     title: "Search Anime",
+    //     functionName: "searchAnimeOnBangumi",
+    //     params: [/* Search parameters */]
+    // }
 };
-// ==/ForwardWidget==
-
-// --- Helper Functions ---
 
 /**
- * Safely extracts text from a selected element.
- * @param {string} docId - The document ID from Widget.dom.parse.
- * @param {string} parentElementId - The ID of the parent element containing the target.
- * @param {string} selector - The CSS selector for the target element.
- * @returns {string} The text content or an empty string if not found/error.
+ * Processing function to fetch and parse Bangumi anime trends.
+ * @param {object} params - Parameters object, contains { page: "1" } by default.
+ * @returns {Promise<Array<object>>} - A promise that resolves to an array of VideoItem objects.
  */
-function safeGetText(docId, parentElementId, selector) {
-    try {
-        const element = Widget.dom.selectFirst(docId, selector, parentElementId);
-        return element ? Widget.dom.text(element.id) : "";
-    } catch (e) {
-        // console.error(`Error getting text for selector "${selector}":`, e);
-        return "";
-    }
-}
-
-/**
- * Safely extracts an attribute from a selected element.
- * @param {string} docId - The document ID from Widget.dom.parse.
- * @param {string} parentElementId - The ID of the parent element containing the target.
- * @param {string} selector - The CSS selector for the target element.
- * @param {string} attributeName - The name of the attribute to extract.
- * @returns {string} The attribute value or an empty string if not found/error.
- */
-function safeGetAttr(docId, parentElementId, selector, attributeName) {
-    try {
-        const element = Widget.dom.selectFirst(docId, selector, parentElementId);
-        return element ? Widget.dom.attr(element.id, attributeName) : "";
-    } catch (e) {
-        // console.error(`Error getting attribute "${attributeName}" for selector "${selector}":`, e);
-        return "";
-    }
-}
-
-// --- IMDb Module Implementation ---
-
-/**
- * Fetches and processes trending data from IMDb.
- * @param {object} params - Parameters from the widget module config.
- * @param {string} params.contentType - 'movies', 'tv', or 'mixed'.
- * @param {string} params.maxResults - Maximum results as a string.
- * @returns {Promise<Array<object>>} A promise resolving to an array of result items.
- */
-async function getImdbTrending(params = {}) {
-    const { contentType = 'movies', maxResults = '25' } = params;
-    const limit = parseInt(maxResults, 10) || 0; // 0 means no limit initially
-
-    const movieUrl = "https://www.imdb.com/chart/moviemeter/";
-    const tvUrl = "https://www.imdb.com/chart/tvmeter/";
-    let urlsToFetch = [];
-
-    if (contentType === 'movies') {
-        urlsToFetch.push(movieUrl);
-    } else if (contentType === 'tv') {
-        urlsToFetch.push(tvUrl);
-    } else { // mixed
-        urlsToFetch.push(movieUrl);
-        urlsToFetch.push(tvUrl);
+async function getBangumiAnimeTrends(params = {}) {
+    const page = params.page || "1"; // Get page number from params, default to 1
+    let url = `https://bgm.tv/anime/browser/?sort=trends`;
+    if (page && page !== "1") {
+        url += `&page=${page}`;
     }
 
-    console.log(`Fetching IMDb trends for: ${contentType}`);
+    console.log(`Fetching Bangumi Anime Trends: ${url}`);
 
     try {
-        const headers = {
-            // Crucial for IMDb to avoid blocking/different layouts
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-             "Accept-Language": "en-US,en;q=0.9" // Request English page
-        };
-
-        // Fetch all required pages concurrently
-        const responses = await Promise.all(
-            urlsToFetch.map(url => Widget.http.get(url, { headers }))
-        );
-
-        let allItems = [];
-        for (const response of responses) {
-            if (!response || !response.data) {
-                console.warn(`Failed to fetch or empty data from one of the IMDb URLs`);
-                continue; // Skip this response if fetching failed
+        // 1. Send HTTP GET request
+        const response = await Widget.http.get(url, {
+            headers: {
+                // Mimic a browser User-Agent
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "Referer": "https://bgm.tv/" // Good practice to include referer
             }
-
-            const docId = Widget.dom.parse(response.data);
-            if (!docId) {
-                console.warn(`Failed to parse HTML from one of the IMDb URLs`);
-                continue; // Skip this response if parsing failed
-            }
-
-             // IMDb selector - NOTE: This is fragile and might change! Inspect IMDb charts if it breaks.
-            // This selector targets list items directly within the main chart list UL.
-            const listSelector = "ul[data-testid='chart-layout-main-list'] > li";
-            const listItems = Widget.dom.select(docId, listSelector);
-
-            console.log(`Found ${listItems.length} potential items on an IMDb page.`);
-
-
-            for (const item of listItems) {
-                const parentElementId = item.id;
-
-                 // Extract data using safe helper functions
-                 // Selectors target elements *within* the list item (parentElementId)
-                const titleElement = Widget.dom.selectFirst(docId, "div[data-testid='titleColumn'] a", parentElementId) || Widget.dom.selectFirst(docId, "h3.ipc-title__text", parentElementId); // Try common patterns
-                const title = titleElement ? Widget.dom.text(titleElement.id) : "";
-
-                const coverElement = Widget.dom.selectFirst(docId, ".ipc-poster img.ipc-image", parentElementId);
-                let coverUrl = coverElement ? Widget.dom.attr(coverElement.id, "src") : "";
-
-                const linkElement = Widget.dom.selectFirst(docId, "a.ipc-title-link-wrapper", parentElementId) || Widget.dom.selectFirst(docId, "div[data-testid='titleColumn'] a", parentElementId); // Different possible link wrappers
-                const linkHref = linkElement ? Widget.dom.attr(linkElement.id, "href") : "";
-
-
-                // IMDb ID extraction (e.g., /title/tt1234567/)
-                const idMatch = linkHref ? linkHref.match(/\/title\/(tt\d+)\//) : null;
-                const imdbId = idMatch ? idMatch[1] : null;
-
-                // Basic validation
-                if (title && coverUrl && imdbId) {
-                     // Sometimes IMDb uses low-res placeholders, try to get full res if pattern matches
-                     if (coverUrl.includes("._V1_")) {
-                         // This attempts to remove resizing parameters like UX182_CR0,3,182,268_AL_
-                         coverUrl = coverUrl.replace(/(\._V1_).*(UX|UY|CR|AL)\d*_?.*(\.jpg)$/, "$1$3");
-                     }
-
-                    allItems.push({
-                        id: imdbId, // Use IMDb ID
-                        type: "imdb", // Custom type for IMDb items
-                        title: title.replace(/^\d+\.\s*/, '').trim(), // Remove ranking number like "1. " and trim whitespace
-                        coverUrl: coverUrl,
-                        // description: "", // Description not easily available on chart page
-                        // durationText: "", // Not applicable/available
-                        // previewUrl: "" // Not applicable/available
-                    });
-                } else {
-                     // console.warn("Skipping IMDb item due to missing data:", { title: title, coverUrl: !!coverUrl, imdbId: imdbId, linkHref: linkHref });
-                }
-            }
-             // Release the parsed document to free memory
-            Widget.dom.dispose(docId);
-        }
-
-        // Limit results if needed *after* combining from potential multiple pages
-        const limitedItems = (limit > 0 && allItems.length > limit) ? allItems.slice(0, limit) : allItems;
-        console.log(`Returning ${limitedItems.length} IMDb items.`);
-        return limitedItems;
-
-    } catch (error) {
-        console.error("Error fetching or processing IMDb data:", error);
-        // Re-throw the error to be handled by the ForwardWidget environment
-        throw new Error(`Failed to fetch IMDb data: ${error.message}`);
-    }
-}
-
-
-// --- Bangumi Module Implementation ---
-
-/**
- * Fetches and processes trending anime data from Bangumi.
- * @param {object} params - Parameters from the widget module config.
- * @param {string} params.maxResults - Maximum results as a string.
- * @returns {Promise<Array<object>>} A promise resolving to an array of result items.
- */
-async function getBangumiTrends(params = {}) {
-    const { maxResults = '25' } = params;
-    const limit = parseInt(maxResults, 10) || 0; // 0 means no limit initially
-    const url = "https://bgm.tv/anime/browser/?sort=trends";
-
-    console.log("Fetching Bangumi Anime trends...");
-
-    try {
-        const headers = {
-            // Bangumi is less strict, but User-Agent is good practice
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        };
-
-        const response = await Widget.http.get(url, { headers });
+        });
 
         if (!response || !response.data) {
-            throw new Error("Failed to fetch data from Bangumi or response was empty.");
+            throw new Error("未能获取网页内容或响应为空");
         }
 
-        const docId = Widget.dom.parse(response.data);
-        if (!docId) {
-            throw new Error("Failed to parse Bangumi HTML.");
-        }
+        // 2. Parse HTML response using built-in cheerio
+        const $ = Widget.html.load(response.data);
 
-        // Selector for the list items
-        const listSelector = "#browserItemList > li";
-        const listItems = Widget.dom.select(docId, listSelector);
+        // 3. Select list items and extract data
+        const results = [];
+        $('ul#browserItemList li.item').each((index, element) => {
+            const $item = $(element);
 
-        console.log(`Found ${listItems.length} potential items on Bangumi.`);
+            // Extract data using CSS selectors based on the provided HTML
+            const titleElement = $item.find('.inner h3 a.l');
+            const mainTitle = titleElement.text().trim();
+            const originalTitle = $item.find('.inner h3 small.grey').text().trim();
+            const fullTitle = originalTitle ? `${mainTitle} ${originalTitle}` : mainTitle;
 
-        let results = [];
-        for (const item of listItems) {
-             // Optional limit application during iteration
-             if (limit > 0 && results.length >= limit) {
-                break;
+            const coverElement = $item.find('a.subjectCover img.cover');
+            let coverUrl = coverElement.attr('src');
+            // Handle protocol-relative URLs (starting with //)
+            if (coverUrl && coverUrl.startsWith('//')) {
+                coverUrl = 'https:' + coverUrl;
             }
 
-            const parentElementId = item.id;
-
-            // Extract data using safe helper functions
-            const title = safeGetText(docId, parentElementId, "h3 > a.l");
-            // Item URL serves as ID
-            let itemUrl = safeGetAttr(docId, parentElementId, "h3 > a.l", "href");
-             // Cover URL - Bangumi uses img with class 'cover' inside a link
-            let coverUrl = safeGetAttr(docId, parentElementId, "a.cover > img.cover", "src");
-             // Fallback if image is lazy loaded using data-cfsrc or data-src
-             if (!coverUrl) {
-                 coverUrl = safeGetAttr(docId, parentElementId, "a.cover > img.cover", "data-cfsrc") || safeGetAttr(docId, parentElementId, "a.cover > img.cover", "data-src");
-             }
-            const description = safeGetText(docId, parentElementId, "p.info.tip");
-
-            // Ensure URLs are absolute (Handle //domain..., /path..., and already absolute https://...)
-             if (itemUrl && itemUrl.startsWith("//")) {
-                 itemUrl = "https:" + itemUrl;
-             } else if (itemUrl && itemUrl.startsWith("/")) {
-                 itemUrl = "https://bgm.tv" + itemUrl; // Prepend Bangumi domain for root-relative paths
-             }
-
-            if (coverUrl && coverUrl.startsWith("//")) {
-                coverUrl = "https:" + coverUrl; // Prepend https: for protocol-relative URLs
+            const linkElement = $item.find('a.subjectCover');
+            let detailLink = linkElement.attr('href');
+            // Prepend base URL if the link is relative
+            if (detailLink && detailLink.startsWith('/')) {
+                detailLink = 'https://bgm.tv' + detailLink;
             }
 
-            // Basic validation
-            if (title && itemUrl && coverUrl) {
-                results.push({
-                    id: itemUrl, // Use the item's Bangumi URL as the ID
-                    type: "url", // Standard type for URL-based items
-                    title: title.trim(), // Trim whitespace
-                    coverUrl: coverUrl,
-                    description: description ? description.trim() : "", // Include description if found, trimmed
-                    // durationText: "", // Not applicable
-                    // previewUrl: "" // Not applicable
-                });
-            } else {
-                 // console.warn("Skipping Bangumi item due to missing data:", { title: title, itemUrl: itemUrl, coverUrl: !!coverUrl });
+            // Extract Subject ID from the list item's ID (e.g., "item_363957" -> "363957")
+            const itemIdAttr = $item.attr('id');
+            const subjectId = itemIdAttr ? itemIdAttr.replace('item_', '') : detailLink; // Fallback to link if ID not found
+
+            const ratingElement = $item.find('.inner p.rateInfo small.fade');
+            const rating = ratingElement.text().trim();
+
+            const infoElement = $item.find('.inner p.info.tip');
+            const infoText = infoElement.text().trim().replace(/\s+/g, ' '); // Clean up whitespace
+
+            // Attempt to extract release date from info text (e.g., "2025年4月7日")
+            let releaseDate = "";
+            const dateMatch = infoText.match(/(\d{4}年\d{1,2}月\d{1,2}日)/);
+            if (dateMatch && dateMatch[1]) {
+                releaseDate = dateMatch[1];
             }
-        }
 
-         // Release the parsed document
-        Widget.dom.dispose(docId);
+            // Map extracted data to ForwardWidget VideoItem format
+            const videoItem = {
+                id: subjectId,              // Use Bangumi subject ID as unique ID
+                type: "url",                // Type indicating it's from a general URL source
+                title: fullTitle,           // Combined title
+                posterPath: coverUrl,       // Vertical cover image URL
+                backdropPath: "",           // Horizontal cover usually not available in list view
+                releaseDate: releaseDate,   // Extracted release date
+                mediaType: "tv",            // Assume 'tv' for anime category on Bangumi
+                rating: rating,             // Rating score
+                genreTitle: "",             // Genre not directly available per item here
+                duration: 0,                // Duration not available here
+                durationText: "",           // Duration text not available here
+                previewUrl: "",             // Preview video not available
+                videoUrl: "",               // Direct video URL not available
+                link: detailLink,           // Link to the detail page
+                description: infoText,      // Raw info line as description
+                childItems: []              // No nested items in this list
+            };
 
-        // Apply limit again just in case (though loop should handle it)
-        const limitedResults = (limit > 0 && results.length > limit) ? results.slice(0, limit) : results;
-        console.log(`Returning ${limitedResults.length} Bangumi items.`);
-        return limitedResults;
+            results.push(videoItem);
+        });
+
+        console.log(`Successfully parsed ${results.length} items from page ${page}.`);
+        // 4. Return the array of VideoItem objects
+        return results;
 
     } catch (error) {
-        console.error("Error fetching or processing Bangumi data:", error);
-        // Re-throw the error
-        throw new Error(`Failed to fetch Bangumi data: ${error.message}`);
+        console.error(`处理 Bangumi 动画热度榜失败 (页码 ${page}):`, error);
+        // Rethrow the error so ForwardWidget can handle it (e.g., show an error message)
+        throw error;
     }
 }
+
+// Optional: Implement search function if needed
+// async function searchAnimeOnBangumi(params = {}) { ... }
