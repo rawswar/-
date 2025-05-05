@@ -1,18 +1,16 @@
 {
-  "title": "My Custom Widgets", // Choose a title for your collection
-  "description": "A collection of custom widgets including Bangumi Trends.", // Describe your collection
-  "icon": "https://raw.githubusercontent.com/quantumultxx/FW-Widgets/refs/heads/main/icon.png", // Optional: URL to an icon for your collection
+  "title": "我的自定义 Widgets",  // 你可以给你的 Widget 合集起个名字
+  "description": "包含我创建的各种 ForwardWidget 组件", // 描述你的合集
+  "icon": "https://your-icon-url/icon.png", // 可选：你的合集图标 URL (你需要提供一个有效的图片链接)
   "widgets": [
     {
-      "id": "trends-bangumi-v1", // Must match the id in the widget's JS file
-      "title": "Bangumi Trends", // Title shown in the app
-      "description": "Fetches trending Anime from Bangumi.", // Description shown in the app
-      "requiredVersion": "0.0.1", // Minimum ForwardWidget version
-      "version": "1.0.0", // Your widget's version
-      "author": "CCE v2.7", // Your author name
-      // IMPORTANT: Replace this URL with the actual raw URL where you host the JS file below
-      "url": "https://github.com/rawswar/-/blob/main/1.js"
+      "id": "bangumi_anime_browser_trends", // 必须与你的 JS 文件中 WidgetMetadata.id 一致
+      "title": "Bangumi 动画热度榜",        // 通常与 JS 文件中 WidgetMetadata.title 一致
+      "description": "浏览 Bangumi 按热度排序的动画列表", // 通常与 JS 文件中 WidgetMetadata.description 一致
+      "requiredVersion": "0.0.1",          // 必须与 JS 文件中 WidgetMetadata.requiredVersion 一致
+      "version": "1.0.0",                 // 必须与 JS 文件中 WidgetMetadata.version 一致
+      "author": "Your Name/Nickname",       // 必须与 JS 文件中 WidgetMetadata.author 一致 (记得替换成你的名字)
+      "url": "https://github.com/rawswar/-/blob/main/1.js" // **极其重要**: 这是你的 bangumi_trends.js 文件的实际下载链接
     }
-
   ]
 }
