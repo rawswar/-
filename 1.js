@@ -1,28 +1,14 @@
-/**
- * ForwardWidget Script for Bangumi Anime Browser (Sorted by Trends)
- * Version: 1.0.3
- * Author: 加个家鸽
- * Source: https://bgm.tv/anime/browser?sort=trends
- * Description: Fetches and parses the anime list from Bangumi's anime browser page,
- *              sorted by popularity trends. Supports pagination. Mimics douban.js structure.
- */
-
-// =============================================================================
-// I. WIDGET METADATA CONFIGURATION
-//    - Using structure observed in working douban.js example.
-// =============================================================================
-WidgetMetadata = { // No 'var' keyword
-    // --- Basic Info (Part 1) ---
+WidgetMetadata = {
     id: "bangumi_anime_browser_trends",
     title: "Bangumi 动画热度榜",
 
-    // --- Functional Modules ---
+    
     modules: [
         {
             title: "动画热度榜 (分页)",
             description: "按热度顺序显示 Bangumi 动画列表，可选择页码。",
             requiresWebView: false,
-            functionName: "fetchBangumiAnimeTrends", // Function name below
+            functionName: "fetchBangumiAnimeTrends",
             sectionMode: false,
             params: [
                 {
@@ -34,30 +20,16 @@ WidgetMetadata = { // No 'var' keyword
                 }
             ]
         }
-    ], // End of modules array
+    ], 
 
-    // --- Basic Info (Part 2 - Order matches douban.js) ---
-    version: "1.0.3",                 // Widget script version
-    requiredVersion: "0.0.1",          // Minimum ForwardWidget app version
-    description: "浏览 Bangumi 按热度排序的动画列表，支持翻页。", // Widget description (repeated for structure match)
-    author: "Your Name/Nickname",       // Your identifier (REPLACE THIS)
-    site: "https://bgm.tv"              // Primary website URL
+    version: "1.0.3",                 
+    requiredVersion: "0.0.1",          
+    description: "浏览 Bangumi 按热度排序的动画列表，支持翻页。", 
+    author: "Your Name/Nickname",       
+    site: "https://bgm.tv"              
 
-    // Optional Search config could go here if needed
-}; // End of WidgetMetadata definition
+}; 
 
-// =============================================================================
-// II. PROCESSING FUNCTION IMPLEMENTATION
-//     - Using Widget.dom API to match douban.js example.
-// =============================================================================
-
-/**
- * Fetches anime data from Bangumi based on trends and page number.
- *
- * @param {object} params - Object containing parameter values (e.g., { page: "1" }).
- * @returns {Promise<Array<object>>} A Promise resolving to an array of VideoItem objects.
- * @throws {Error} If fetching or parsing fails.
- */
 async function fetchBangumiAnimeTrends(params = {}) {
     const safeParams = params || {};
     const page = safeParams.page || "1";
@@ -71,7 +43,7 @@ async function fetchBangumiAnimeTrends(params = {}) {
     console.log(`Executing ${WidgetMetadata.id} v${WidgetMetadata.version}: Fetching ${targetUrl}`);
 
     try {
-        // 1. --- Send HTTP GET Request ---
+        
         const response = await Widget.http.get(targetUrl, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
@@ -85,25 +57,20 @@ async function fetchBangumiAnimeTrends(params = {}) {
             throw new Error(`No data received from ${targetUrl}`);
         }
 
-        // 2. --- Parse HTML Response using Widget.dom ---
+        
         const docId = Widget.dom.parse(response.data);
         if (docId < 0) {
-            // Check if parsing failed (Widget.dom.parse returns negative on failure)
+        
             throw new Error("Failed to parse HTML document.");
         }
         console.log(`HTML parsed successfully (docId: ${docId})`);
-
-        // 3. --- Select Element IDs ---
-        // Select the container for each list item
         const itemContainerSelector = 'ul#browserItemList > li.item';
         const itemElementIds = Widget.dom.select(docId, itemContainerSelector);
         console.log(`Found ${itemElementIds.length} item containers.`);
 
-        // 4. --- Extract Data for Each Item ---
         const videoItems = [];
         for (const itemId of itemElementIds) {
             try {
-                // Extract data relative to the current item container (itemId)
                 const titleAnchorId = Widget.dom.select(itemId, '.inner h3 a.l')[0];
                 const mainTitle = titleAnchorId >= 0 ? await Widget.dom.text(titleAnchorId) : "";
 
@@ -123,9 +90,8 @@ async function fetchBangumiAnimeTrends(params = {}) {
                     detailLink = baseUrl + detailLink;
                 }
 
-                // Get subject ID from the container's 'id' attribute
-                const itemIdAttr = await Widget.dom.attr(itemId, 'id'); // e.g., "item_363957"
-                const subjectId = itemIdAttr ? itemIdAttr.replace('item_', '') : detailLink; // Fallback
+                const itemIdAttr = await Widget.dom.attr(itemId, 'id'); 
+                const subjectId = itemIdAttr ? itemIdAttr.replace('item_', '') : detailLink; 
 
                 const ratingSmallId = Widget.dom.select(itemId, '.inner p.rateInfo small.fade')[0];
                 const ratingScore = ratingSmallId >= 0 ? (await Widget.dom.text(ratingSmallId)).trim() : "N/A";
@@ -139,7 +105,6 @@ async function fetchBangumiAnimeTrends(params = {}) {
                     releaseDate = dateMatch[1];
                 }
 
-                // 5. --- Format as VideoItem ---
                 const videoItem = {
                     id: subjectId || `fallback_${Date.now()}_${videoItems.length}`,
                     type: "url",
@@ -162,27 +127,20 @@ async function fetchBangumiAnimeTrends(params = {}) {
 
             } catch(innerError) {
                 console.error(`Error processing item with ID ${itemId}:`, innerError);
-                // Skip this item and continue with the next
+                
             }
-        } // End of loop through items
+        } 
 
         console.log(`Executing ${WidgetMetadata.id}: Successfully processed ${videoItems.length} items from page ${page}.`);
 
-        // 6. --- Return Result Array ---
+        
         return videoItems;
 
     } catch (error) {
         console.error(`Error in ${WidgetMetadata.id} (Page ${page}):`, error);
         throw new Error(`[${WidgetMetadata.id}] Failed: ${error.message}`);
     } finally {
-        // Optional: Release the parsed document if Widget.dom requires manual cleanup
-        // if (docId >= 0) { Widget.dom.release(docId); }
+        
     }
 }
 
-// Optional: Implement search function if defined in metadata
-/*
-async function searchBangumiAnime(params = {}) {
-    // ... search logic ...
-}
-*/
