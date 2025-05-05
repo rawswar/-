@@ -11,7 +11,7 @@
       "version": "1.0.0", // Your widget's version
       "author": "CCE v2.7", // Your author name
       // IMPORTANT: Replace this URL with the actual raw URL where you host the JS file below
-      "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js?token=GHSAT0AAAAAADCXENEEQR6525OFXVXTWDSI2AYPPWQ"
+      "url": "https://github.com/rawswar/-/blob/main/1.js"
     }
 
   ]
