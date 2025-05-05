@@ -1,7 +1,7 @@
 {
   "title": "我的自定义 Widgets",  // 你可以给你的 Widget 合集起个名字
   "description": "包含我创建的各种 ForwardWidget 组件", // 描述你的合集
-  "icon": "https://your-icon-url/icon.png", // 可选：你的合集图标 URL (你需要提供一个有效的图片链接)
+  "icon": "https://github.com/pack1r/ForwardWidgets/raw/main/icon.png", // 可选：你的合集图标 URL (你需要提供一个有效的图片链接)
   "widgets": [
     {
       "id": "bangumi_anime_browser_trends", // 必须与你的 JS 文件中 WidgetMetadata.id 一致
