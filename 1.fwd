@@ -1,0 +1,19 @@
+{
+  "title": "My Custom Widgets", // Choose a title for your collection
+  "description": "A collection of custom widgets including IMDb & Bangumi Trends.", // Describe your collection
+  "icon": "https://raw.githubusercontent.com/quantumultxx/FW-Widgets/refs/heads/main/icon.png", // Optional: URL to an icon for your collection
+  "widgets": [
+    {
+      "id": "trends-imdb-bangumi-v1", // Must match the id in the widget's JS file
+      "title": "IMDb & Bangumi Trends", // Title shown in the app
+      "description": "Fetches trending Movies/TV Shows from IMDb charts and trending Anime from Bangumi.", // Description shown in the app
+      "requiredVersion": "0.0.1", // Minimum ForwardWidget version
+      "version": "1.0.0", // Your widget's version
+      "author": "CCE v2.7", // Your author name
+      // IMPORTANT: Replace this URL with the actual raw URL where you host the JS file below
+      "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js?token=GHSAT0AAAAAADCXENEFH6TCAIBC3TF46RHK2AYBLXA"
+    }
+    // You can add more widget entries here if you create others
+    // , { ... another widget metadata ... }
+  ]
+}
