@@ -9,31 +9,15 @@
   "requiredVersion": "0.0.1",
   "script": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js", 
   "modules": [
-    {
-      "id": "popular_anime",
-      "title": "最近热门动画",
-      "description": "获取最近热门的动画列表",
-      "requiresWebView": false,
-      "functionName": "getPopularAnime",
-      "sectionMode": false,
-      "params": []
-    },
-    {
-      "id": "anime_by_year",
-      "title": "按年份动画 (排名)",
-      "description": "获取指定年份的动画列表，按排名排序",
-      "requiresWebView": false,
-      "functionName": "getAnimeByYear",
-      "sectionMode": false,
-      "params": [
-        {
-          "name": "year",
-          "title": "年份",
-          "type": "input",
-          "description": "请输入年份 (例如: 2025)",
-          "value": "2025"
-        }
-      ]
-    }
-  ]
+
+
+{
+  "id": "bgm_anime", // Should match the id in WidgetMetadata
+  "title": "Bangumi 动画", // Or a more descriptive title for the collection entry
+  "description": "从 bgm.tv 获取最近热门及按年份排序的动画列表。",
+  "icon": "https://github.com/pack1r/ForwardWidgets/raw/main/icon.png", 
+  "requiredVersion": "0.0.1",
+  "version": "1.0.0",
+  "author": "AI Agent (User Editable)", // Or your name
+  "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js" // <<< CRITICAL: Replace with the actual raw URL
 }
