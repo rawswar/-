@@ -1,15 +1,37 @@
 {
-  "title": "我的自定义 Widgets",  
-  "description": "包含我创建的各种 ForwardWidget 组件", 
+  "id": "tv.bgm.anime",
+  "title": "Bangumi 动画",
+  "description": "从 bgm.tv 获取动画信息",
   "icon": "https://github.com/pack1r/ForwardWidgets/raw/main/icon.png", 
-  "widgets": [
+  "author": "AI Agent",
+  "site": "https://bgm.tv",
+  "version": "1.0.1",
+  "requiredVersion": "0.0.1",
+  "script": "bangumi_anime.js",
+  "modules": [
     {
-      "id": "bangumi_anime_browser_trends", 
-      "title": "Bangumi 动画热度榜",        
-      "description": "浏览 Bangumi 按热度排序的动画列表",
-      "requiredVersion": "0.0.1",          
-      "version": "1.0.3",                 
-      "author": "t1st",       
-      "url": "https://raw.githubusercontent.com/rawswar/-/refs/heads/main/1.js"
+      "title": "最近热门动画",
+      "description": "获取最近热门的动画列表",
+      "requiresWebView": false,
+      "functionName": "getPopularAnime",
+      "sectionMode": false,
+      "params": []
+    },
+    {
+      "title": "按年份动画 (排名)",
+      "description": "获取指定年份的动画列表，按排名排序",
+      "requiresWebView": false,
+      "functionName": "getAnimeByYear",
+      "sectionMode": false,
+      "params": [
+        {
+          "name": "year",
+          "title": "年份",
+          "type": "input",
+          "description": "请输入年份 (例如: 2025)",
+          "value": "2025"
+        }
+      ]
+    }
   ]
 }
