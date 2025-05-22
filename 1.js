@@ -1,145 +1,135 @@
-WidgetMetadata = {
-    id: "bangumi_anime_browser_trends",
-    title: "Bangumi 动画热度榜",
-
-    
+var WidgetMetadata = {
+    id: "tv.bgm.anime",
+    title: "Bangumi 动画",
+    description: "从 bgm.tv 获取动画信息",
+    author: "AI Agent",
+    site: "https://bgm.tv",
+    version: "1.0.1",
+    requiredVersion: "0.0.1",
     modules: [
         {
-            title: "动画热度榜 (分页)",
-            description: "按热度顺序显示 Bangumi 动画列表，可选择页码。",
+            title: "最近热门动画",
+            description: "获取最近热门的动画列表",
             requiresWebView: false,
-            functionName: "fetchBangumiAnimeTrends",
+            functionName: "getPopularAnime",
+            sectionMode: false,
+            params: []
+        },
+        {
+            title: "按年份动画 (排名)",
+            description: "获取指定年份的动画列表，按排名排序",
+            requiresWebView: false,
+            functionName: "getAnimeByYear",
             sectionMode: false,
             params: [
                 {
-                    name: "page",
-                    title: "页码",
-                    type: "page",
-                    description: "选择要加载的 Bangumi 列表页码",
-                    value: "1"
+                    name: "year",
+                    title: "年份",
+                    type: "input",
+                    description: "请输入年份 (例如: 2025)",
+                    value: new Date().getFullYear().toString() // 默认值为当前年份
                 }
             ]
         }
-    ], 
+    ]
+};
 
-    version: "1.0.3",                 
-    requiredVersion: "0.0.1",          
-    description: "浏览 Bangumi 按热度排序的动画列表，支持翻页。", 
-    author: "t1st",       
-    site: "https://bgm.tv"              
+async function getPopularAnime(params = {}) {
+    const url = "https://bgm.tv/anime/browser/?sort=trends";
+    // 使用 #browserItemList li.item 作为选择器来获取每个动画条目 [1]
+    return fetchAndProcessAnimeList(url, "#browserItemList li.item");
+}
 
-}; 
-
-async function fetchBangumiAnimeTrends(params = {}) {
-    const safeParams = params || {};
-    const page = safeParams.page || "1";
-    const baseUrl = "https://bgm.tv";
-    let targetUrl = `${baseUrl}/anime/browser/?sort=trends`;
-
-    if (page !== "1") {
-        targetUrl += `&page=${page}`;
+async function getAnimeByYear(params = {}) {
+    if (!params.year || !/^\d{4}$/.test(params.year)) {
+        throw new Error("年份参数缺失或格式不正确 (应为4位数字)");
     }
+    const year = params.year;
+    const url = `https://bgm.tv/anime/browser/airtime/${year}?sort=rank`;
+    // 假设此页面的结构与热门动画页面相似 [1]
+    // 如果 Widget.http.get 无法访问此 URL (如同之前浏览工具遇到的情况)，此模块可能无法正常工作
+    return fetchAndProcessAnimeList(url, "#browserItemList li.item");
+}
 
-    console.log(`Executing ${WidgetMetadata.id} v${WidgetMetadata.version}: Fetching ${targetUrl}`);
-
+async function fetchAndProcessAnimeList(url, itemSelector) {
     try {
-        
-        const response = await Widget.http.get(targetUrl, {
+        console.log("Fetching URL:", url);
+        const response = await Widget.http.get(url, {
             headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
-                "Referer": `${baseUrl}/`,
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 ForwardWidget/1.0"
             }
         });
 
         if (!response || !response.data) {
-            throw new Error(`No data received from ${targetUrl}`);
+            throw new Error("未能获取到有效的页面数据。");
         }
 
-        
         const docId = Widget.dom.parse(response.data);
-        if (docId < 0) {
-        
-            throw new Error("Failed to parse HTML document.");
+        if (!docId) {
+            throw new Error("HTML 解析失败。");
         }
-        console.log(`HTML parsed successfully (docId: ${docId})`);
-        const itemContainerSelector = 'ul#browserItemList > li.item';
-        const itemElementIds = Widget.dom.select(docId, itemContainerSelector);
-        console.log(`Found ${itemElementIds.length} item containers.`);
 
-        const videoItems = [];
-        for (const itemId of itemElementIds) {
-            try {
-                const titleAnchorId = Widget.dom.select(itemId, '.inner h3 a.l')[0];
-                const mainTitle = titleAnchorId >= 0 ? await Widget.dom.text(titleAnchorId) : "";
+        const elements = Widget.dom.select(docId, itemSelector);
+        if (!elements || elements.length === 0) {
+            console.log("No elements found with selector:", itemSelector, "on page:", url);
+            return []; // 没有找到条目，返回空数组
+        }
 
-                const originalTitleSmallId = Widget.dom.select(itemId, '.inner h3 small.grey')[0];
-                const originalTitle = originalTitleSmallId >= 0 ? await Widget.dom.text(originalTitleSmallId) : "";
-                const fullTitle = originalTitle ? `${mainTitle.trim()} ${originalTitle.trim()}` : mainTitle.trim();
+        return elements.map(elementId => {
+            const titleElement = Widget.dom.selectFirst(elementId, "h3.title a");
+            const title = titleElement ? Widget.dom.text(titleElement) : "N/A";
+            const itemLinkRelative = titleElement ? Widget.dom.attr(titleElement, "href") : "";
+            const itemLink = itemLinkRelative ? "https://bgm.tv" + itemLinkRelative : "";
 
-                const coverImgId = Widget.dom.select(itemId, 'a.subjectCover img.cover')[0];
-                let posterPath = coverImgId >= 0 ? await Widget.dom.attr(coverImgId, 'src') : "";
-                if (posterPath && posterPath.startsWith('//')) {
-                    posterPath = 'https:' + posterPath;
-                }
+            // 从链接中提取 ID，例如 /subject/12345 -> 12345 [1]
+            const subjectIdMatch = itemLinkRelative.match(/\/subject\/(\d+)/);
+            const id = subjectIdMatch ? subjectIdMatch[1] : `bgm_${Math.random().toString(36).substr(2, 9)}`;
 
-                const detailAnchorId = Widget.dom.select(itemId, 'a.subjectCover')[0];
-                let detailLink = detailAnchorId >= 0 ? await Widget.dom.attr(detailAnchorId, 'href') : "";
-                if (detailLink && detailLink.startsWith('/')) {
-                    detailLink = baseUrl + detailLink;
-                }
-
-                const itemIdAttr = await Widget.dom.attr(itemId, 'id'); 
-                const subjectId = itemIdAttr ? itemIdAttr.replace('item_', '') : detailLink; 
-
-                const ratingSmallId = Widget.dom.select(itemId, '.inner p.rateInfo small.fade')[0];
-                const ratingScore = ratingSmallId >= 0 ? (await Widget.dom.text(ratingSmallId)).trim() : "N/A";
-
-                const infoPId = Widget.dom.select(itemId, '.inner p.info.tip')[0];
-                const infoText = infoPId >= 0 ? (await Widget.dom.text(infoPId)).trim().replace(/\s\s+/g, ' ') : "";
-
-                let releaseDate = "";
-                const dateMatch = infoText.match(/(\d{4}年\d{1,2}月\d{1,2}日)/);
-                if (dateMatch && dateMatch[1]) {
-                    releaseDate = dateMatch[1];
-                }
-
-                const videoItem = {
-                    id: subjectId || `fallback_${Date.now()}_${videoItems.length}`,
-                    type: "url",
-                    title: fullTitle || "未知标题",
-                    posterPath: posterPath || "",
-                    backdropPath: "",
-                    releaseDate: releaseDate,
-                    mediaType: "tv",
-                    rating: ratingScore,
-                    genreTitle: "",
-                    duration: 0,
-                    durationText: "",
-                    previewUrl: "",
-                    videoUrl: "",
-                    link: detailLink || "",
-                    description: infoText,
-                    childItems: []
-                };
-                videoItems.push(videoItem);
-
-            } catch(innerError) {
-                console.error(`Error processing item with ID ${itemId}:`, innerError);
-                
+            const coverElement = Widget.dom.selectFirst(elementId, "a.ll img");
+            let coverUrl = coverElement ? Widget.dom.attr(coverElement, "src") : "";
+            if (coverUrl && coverUrl.startsWith("//")) { // [1]
+                coverUrl = "https:" + coverUrl;
             }
-        } 
 
-        console.log(`Executing ${WidgetMetadata.id}: Successfully processed ${videoItems.length} items from page ${page}.`);
+            const rankElement = Widget.dom.selectFirst(elementId, "span.rank");
+            const rankText = rankElement ? Widget.dom.text(rankElement) : ""; // Rank N/A [1]
 
-        
-        return videoItems;
+            const infoElement = Widget.dom.selectFirst(elementId, "p.info.tip");
+            const info = infoElement ? Widget.dom.text(infoElement).trim() : "N/A"; // [1]
 
+            const ratingElement = Widget.dom.selectFirst(elementId, "small.fade");
+            const rating = ratingElement ? Widget.dom.text(ratingElement) : "N/A"; // [1]
+
+            const ratersElement = Widget.dom.selectFirst(elementId, "span.tip_j");
+            const raters = ratersElement ? Widget.dom.text(ratersElement) : "N/A"; // [1]
+
+            let description = "";
+            if (rankText) description += `${rankText.trim()} | `;
+            if (rating !== "N/A") description += `评分: ${rating.trim()}`;
+            if (raters !== "N/A") description += ` (${raters.trim()}) | `;
+            description += `信息: ${info}`;
+
+
+            return {
+                id: id, // 唯一ID，使用番剧的数字ID [1]
+                type: "url", // 类型，对于普通链接条目使用 "url"
+                title: title.trim(), // 标题 [1]
+                coverUrl: coverUrl, // 封面图片地址 [1]
+                description: description.replace(/\s*\|\s*$/, "").trim(), // 描述信息拼接 [1]
+                url: itemLink, // 指向番剧详情页的完整URL [1]
+                // 根据 ForwardWidget 文档，还可以有其他字段如:
+                // durationText: "...", // 时长文本 (如果可提取)
+                // previewUrl: "...", // 预览视频地址 (如果可提取)
+            };
+        });
     } catch (error) {
-        console.error(`Error in ${WidgetMetadata.id} (Page ${page}):`, error);
-        throw new Error(`[${WidgetMetadata.id}] Failed: ${error.message}`);
-    } finally {
-        
+        console.error(`处理 ${url} 失败:`, error.message, error.stack);
+        if (error.message && error.message.includes("ENOTFOUND") || error.message.includes("ETIMEOUT") || error.message.includes("ECONNREFUSED")) {
+             throw new Error(`无法访问网络地址 ${url}。请检查网络连接或URL是否正确。`);
+        }
+        if (error.message && (error.message.includes("404") || error.message.includes("403"))) {
+            throw new Error(`访问 ${url} 时发生错误: 服务器返回 ${error.message}。该页面可能不存在或禁止访问。`);
+        }
+        throw new Error(`获取和处理 ${url} 内容时出错: ${error.message}`);
     }
 }
